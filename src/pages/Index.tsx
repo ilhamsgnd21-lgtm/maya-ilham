@@ -6,6 +6,7 @@ import { Dashboard } from "@/components/Dashboard";
 import { TransactionForm } from "@/components/TransactionForm";
 import { TransactionList } from "@/components/TransactionList";
 import { WishlistSection } from "@/components/WishlistSection";
+import { SavingsSection } from "@/components/SavingsSection";
 import { signOut } from "@/lib/supabase";
 import { toast } from "sonner";
 import { LogOut, Wallet } from "lucide-react";
@@ -86,6 +87,7 @@ const Index = () => {
         <div className="grid gap-8 lg:grid-cols-2">
           <div className="space-y-8">
             <TransactionForm onSuccess={handleTransactionSuccess} />
+            <SavingsSection />
             <WishlistSection />
           </div>
           <div>
