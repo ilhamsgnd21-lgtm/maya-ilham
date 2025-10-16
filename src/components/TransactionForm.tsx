@@ -28,6 +28,9 @@ interface TransactionFormProps {
 export const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
   const [type, setType] = useState<"income" | "expense">("expense");
   const [amount, setAmount] = useState("");
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState("");
+  const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,10 +42,6 @@ export const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
     e.preventDefault();
     setLoading(true);
 
-    const formData = new FormData(e.currentTarget);
-    const title = formData.get("title") as string;
-    const category = formData.get("category") as string;
-    const notes = formData.get("notes") as string;
     const numericAmount = parseFormattedNumber(amount);
 
     try {
@@ -61,8 +60,14 @@ export const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
       if (error) throw error;
 
       toast.success("Transaksi berhasil ditambahkan!");
-      e.currentTarget.reset();
+      
+      // Reset all form fields
+      setTitle("");
       setAmount("");
+      setCategory("");
+      setNotes("");
+      setType("expense");
+      
       onSuccess();
     } catch (error: any) {
       toast.error(error.message || "Gagal menambahkan transaksi");
@@ -105,6 +110,8 @@ export const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
             <Input
               id="title"
               name="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
               placeholder="Contoh: Belanja bulanan"
               required
             />
@@ -123,7 +130,7 @@ export const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
 
           <div className="space-y-2">
             <Label htmlFor="category">Kategori</Label>
-            <Select name="category" required>
+            <Select name="category" value={category} onValueChange={setCategory} required>
               <SelectTrigger>
                 <SelectValue placeholder="Pilih kategori" />
               </SelectTrigger>
@@ -142,6 +149,8 @@ export const TransactionForm = ({ onSuccess }: TransactionFormProps) => {
             <Textarea
               id="notes"
               name="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
               placeholder="Tambahkan catatan..."
               rows={3}
             />
