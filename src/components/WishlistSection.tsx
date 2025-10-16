@@ -40,6 +40,24 @@ export const WishlistSection = () => {
 
   useEffect(() => {
     fetchWishlist();
+
+    // Subscribe to realtime changes
+    const channel = supabase
+      .channel('wishlist-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'wishlist_items'
+        },
+        () => fetchWishlist()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchWishlist = async () => {
