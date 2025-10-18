@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { formatCurrency, formatNumber, parseFormattedNumber } from "@/lib/format";
-import { PiggyBank, Plus } from "lucide-react";
+import { PiggyBank, Plus, Pencil, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +12,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -32,6 +42,11 @@ export const SavingsSection = () => {
   const [addMoneyOpen, setAddMoneyOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<SavingsGoal | null>(null);
   const [addAmount, setAddAmount] = useState("");
+  const [editOpen, setEditOpen] = useState(false);
+  const [editGoal, setEditGoal] = useState<SavingsGoal | null>(null);
+  const [editTargetAmount, setEditTargetAmount] = useState("");
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteGoal, setDeleteGoal] = useState<SavingsGoal | null>(null);
 
   useEffect(() => {
     fetchGoals();
@@ -144,6 +159,55 @@ export const SavingsSection = () => {
     }
   };
 
+  const handleEdit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editGoal) return;
+
+    const formData = new FormData(e.currentTarget);
+    const title = formData.get("title") as string;
+    const deadline = formData.get("deadline") as string;
+    const amount = parseFormattedNumber(editTargetAmount);
+
+    try {
+      const { error } = await supabase
+        .from("savings_goals")
+        .update({
+          title,
+          target_amount: amount,
+          deadline: deadline || null,
+        })
+        .eq("id", editGoal.id);
+
+      if (error) throw error;
+
+      toast.success("Target tabungan berhasil diupdate!");
+      setEditOpen(false);
+      setEditGoal(null);
+      setEditTargetAmount("");
+    } catch (error: any) {
+      toast.error(error.message || "Gagal mengupdate target tabungan");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteGoal) return;
+
+    try {
+      const { error } = await supabase
+        .from("savings_goals")
+        .delete()
+        .eq("id", deleteGoal.id);
+
+      if (error) throw error;
+
+      toast.success("Target tabungan berhasil dihapus!");
+      setDeleteOpen(false);
+      setDeleteGoal(null);
+    } catch (error: any) {
+      toast.error(error.message || "Gagal menghapus target tabungan");
+    }
+  };
+
   if (loading) {
     return (
       <Card className="border-border/50 shadow-lg">
@@ -228,8 +292,8 @@ export const SavingsSection = () => {
                   key={goal.id}
                   className="p-4 rounded-lg border border-border/50 space-y-3"
                 >
-                  <div className="flex items-start justify-between">
-                    <div>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1">
                       <h4 className="font-medium">{goal.title}</h4>
                       {goal.deadline && (
                         <p className="text-sm text-muted-foreground">
@@ -237,12 +301,37 @@ export const SavingsSection = () => {
                         </p>
                       )}
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm text-muted-foreground">Target</p>
-                      <p className="font-semibold text-success">
-                        {formatCurrency(goal.target_amount)}
-                      </p>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => {
+                          setEditGoal(goal);
+                          setEditTargetAmount(formatNumber(goal.target_amount.toString()));
+                          setEditOpen(true);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive"
+                        onClick={() => {
+                          setDeleteGoal(goal);
+                          setDeleteOpen(true);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">Target</p>
+                    <p className="font-semibold text-success">
+                      {formatCurrency(goal.target_amount)}
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
@@ -308,6 +397,67 @@ export const SavingsSection = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Target Tabungan</DialogTitle>
+          </DialogHeader>
+          {editGoal && (
+            <form onSubmit={handleEdit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="editTitle">Nama Target</Label>
+                <Input
+                  id="editTitle"
+                  name="title"
+                  defaultValue={editGoal.title}
+                  placeholder="Contoh: Dana Darurat"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editTarget">Target Jumlah</Label>
+                <Input
+                  id="editTarget"
+                  value={editTargetAmount}
+                  onChange={(e) => setEditTargetAmount(formatNumber(e.target.value))}
+                  placeholder="0"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editDeadline">Deadline (Opsional)</Label>
+                <Input
+                  id="editDeadline"
+                  name="deadline"
+                  type="date"
+                  defaultValue={editGoal.deadline ? new Date(editGoal.deadline).toISOString().split('T')[0] : ''}
+                />
+              </div>
+              <Button type="submit" className="w-full">
+                Simpan Perubahan
+              </Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Target Tabungan</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin menghapus target "{deleteGoal?.title}"? Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };
