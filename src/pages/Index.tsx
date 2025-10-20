@@ -9,12 +9,18 @@ import { WishlistSection } from "@/components/WishlistSection";
 import { SavingsSection } from "@/components/SavingsSection";
 import { signOut } from "@/lib/supabase";
 import { toast } from "sonner";
-import { LogOut, Wallet } from "lucide-react";
+import { LogOut, Wallet, Pencil } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const Index = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [profileName, setProfileName] = useState("");
+  const [fullName, setFullName] = useState("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -22,6 +28,7 @@ const Index = () => {
         navigate("/auth");
       } else {
         setUser(session.user);
+        fetchProfile(session.user.id);
       }
     });
 
@@ -32,11 +39,27 @@ const Index = () => {
         navigate("/auth");
       } else {
         setUser(session.user);
+        fetchProfile(session.user.id);
       }
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  const fetchProfile = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", userId)
+      .single();
+
+    if (error) {
+      console.error("Error fetching profile:", error);
+    } else if (data) {
+      setFullName(data.full_name || "");
+      setProfileName(data.full_name || "");
+    }
+  };
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -47,6 +70,23 @@ const Index = () => {
 
   const handleTransactionSuccess = () => {
     setRefreshKey((prev) => prev + 1);
+  };
+
+  const handleProfileUpdate = async () => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("profiles")
+      .update({ full_name: profileName })
+      .eq("id", user.id);
+
+    if (error) {
+      toast.error("Gagal memperbarui profil");
+    } else {
+      setFullName(profileName);
+      setProfileOpen(false);
+      toast.success("Profil berhasil diperbarui");
+    }
   };
 
   if (!user) {
@@ -69,9 +109,60 @@ const Index = () => {
               <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                 DompetKu
               </h1>
-              <p className="text-sm text-muted-foreground">
-                Selamat datang, {user.email}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-muted-foreground">
+                  {fullName ? (
+                    <>
+                      <span className="font-medium">{fullName}</span> ({user.email})
+                    </>
+                  ) : (
+                    user.email
+                  )}
+                </p>
+                <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() => setProfileName(fullName)}
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Edit Profil</DialogTitle>
+                      <DialogDescription>
+                        Ubah informasi profil Anda
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="profile-name">Nama Lengkap</Label>
+                        <Input
+                          id="profile-name"
+                          value={profileName}
+                          onChange={(e) => setProfileName(e.target.value)}
+                          placeholder="Masukkan nama lengkap"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Email</Label>
+                        <Input value={user.email} disabled />
+                      </div>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setProfileOpen(false)}>
+                        Batal
+                      </Button>
+                      <Button onClick={handleProfileUpdate}>
+                        Simpan
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
           </div>
           <Button variant="outline" onClick={handleSignOut} size="sm">
