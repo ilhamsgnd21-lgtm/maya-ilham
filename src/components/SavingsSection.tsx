@@ -45,6 +45,7 @@ export const SavingsSection = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [editGoal, setEditGoal] = useState<SavingsGoal | null>(null);
   const [editTargetAmount, setEditTargetAmount] = useState("");
+  const [editCurrentAmount, setEditCurrentAmount] = useState("");
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteGoal, setDeleteGoal] = useState<SavingsGoal | null>(null);
 
@@ -167,6 +168,7 @@ export const SavingsSection = () => {
     const title = formData.get("title") as string;
     const deadline = formData.get("deadline") as string;
     const amount = parseFormattedNumber(editTargetAmount);
+    const currentAmount = parseFormattedNumber(editCurrentAmount);
 
     try {
       const { error } = await supabase
@@ -174,6 +176,7 @@ export const SavingsSection = () => {
         .update({
           title,
           target_amount: amount,
+          current_amount: currentAmount,
           deadline: deadline || null,
         })
         .eq("id", editGoal.id);
@@ -184,6 +187,7 @@ export const SavingsSection = () => {
       setEditOpen(false);
       setEditGoal(null);
       setEditTargetAmount("");
+      setEditCurrentAmount("");
     } catch (error: any) {
       toast.error(error.message || "Gagal mengupdate target tabungan");
     }
@@ -309,6 +313,7 @@ export const SavingsSection = () => {
                         onClick={() => {
                           setEditGoal(goal);
                           setEditTargetAmount(formatNumber(goal.target_amount.toString()));
+                          setEditCurrentAmount(formatNumber(goal.current_amount.toString()));
                           setEditOpen(true);
                         }}
                       >
@@ -421,6 +426,16 @@ export const SavingsSection = () => {
                   id="editTarget"
                   value={editTargetAmount}
                   onChange={(e) => setEditTargetAmount(formatNumber(e.target.value))}
+                  placeholder="0"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editCurrentAmount">Jumlah Terkumpul</Label>
+                <Input
+                  id="editCurrentAmount"
+                  value={editCurrentAmount}
+                  onChange={(e) => setEditCurrentAmount(formatNumber(e.target.value))}
                   placeholder="0"
                   required
                 />
