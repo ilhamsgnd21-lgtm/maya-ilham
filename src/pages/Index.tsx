@@ -4,12 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Dashboard } from "@/components/Dashboard";
 import { TransactionForm } from "@/components/TransactionForm";
-import { TransactionList } from "@/components/TransactionList";
 import { WishlistSection } from "@/components/WishlistSection";
 import { SavingsSection } from "@/components/SavingsSection";
 import { signOut } from "@/lib/supabase";
 import { toast } from "sonner";
-import { LogOut, Wallet, Pencil } from "lucide-react";
+import { LogOut, Wallet, Pencil, History } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +17,6 @@ import { Label } from "@/components/ui/label";
 const Index = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileName, setProfileName] = useState("");
   const [fullName, setFullName] = useState("");
@@ -66,10 +65,6 @@ const Index = () => {
     if (error) {
       toast.error("Gagal keluar");
     }
-  };
-
-  const handleTransactionSuccess = () => {
-    setRefreshKey((prev) => prev + 1);
   };
 
   const handleProfileUpdate = async () => {
@@ -175,15 +170,18 @@ const Index = () => {
       <main className="container mx-auto px-4 py-8 space-y-8">
         <Dashboard />
 
-        <div className="grid gap-8 lg:grid-cols-2">
-          <div className="space-y-8">
-            <TransactionForm onSuccess={handleTransactionSuccess} />
-            <SavingsSection />
-            <WishlistSection />
-          </div>
-          <div>
-            <TransactionList refresh={refreshKey} />
-          </div>
+        <div className="space-y-8">
+          <TransactionForm onSuccess={() => {}} />
+          
+          <Link to="/transactions">
+            <Button variant="outline" className="w-full" size="lg">
+              <History className="w-5 h-5 mr-2" />
+              Lihat Semua Riwayat Transaksi
+            </Button>
+          </Link>
+
+          <SavingsSection />
+          <WishlistSection />
         </div>
       </main>
     </div>
